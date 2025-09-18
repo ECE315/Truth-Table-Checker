@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Truth Table Checker</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    table { border-collapse: collapse; margin-bottom: 15px; }
+    td, th { border: 1px solid #000; padding: 6px; text-align: center; }
+    input { width: 30px; text-align: center; }
+    #result { font-weight: bold; margin-top: 10px; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h2>Truth Table Checker</h2>
+  <p>Enter 0 or 1 in each box, then click "Check".</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>A</th>
+        <th>B</th>
+        <th>C</th>
+        <th>T</th>
+        <th>Out</th>
+      </tr>
+    </thead>
+    <tbody id="table-body"></tbody>
+  </table>
+
+  <button onclick="checkTable()">Check</button>
+  <div id="result"></div>
+
+  <script>
+    // Correct truth table (only rows where T=0 matter)
+    const answerKey = [
+      {A:0, B:0, C:0, T:0, Out:0},
+      {A:0, B:0, C:1, T:0, Out:0},
+      {A:0, B:1, C:0, T:0, Out:0},
+      {A:0, B:1, C:1, T:0, Out:1},
+      {A:1, B:0, C:0, T:0, Out:0},
+      {A:1, B:0, C:1, T:0, Out:1},
+      {A:1, B:1, C:0, T:0, Out:1},
+      {A:1, B:1, C:1, T:0, Out:1}
+    ];
+
+    // Lookup table of cadet emails -> codes (embedded)
+    const emailCodeMap = {
+  "nickolas.uptain@afacademy.af.edu": 1000,
+  "madison.montgomery@afacademy.af.edu": 1001,
+  "c26aaron.lewark@afacademy.af.edu": 1002,
+  "c27adam.hrynciw@afacademy.af.edu": 1003,
+  "c26aden.extrand@afacademy.af.edu": 1004,
+  "c26adrian.caban@afacademy.af.edu": 1005,
+  "c27aidan.blankenship@afacademy.af.edu": 1006,
+  "c27aiden.rogers@afacademy.af.edu": 1007,
+  "c26alaina.walsh@afacademy.af.edu": 1008,
+  "c27alayna.cecrle@afacademy.af.edu": 1009,
+  "c28alec.foltz@afacademy.af.edu": 1010,
+  "c27alejandro.cardona@afacademy.af.edu": 1011,
+  "c26alessandro.rivero@afacademy.af.edu": 1012,
+  "c27alexander.brookins@afacademy.af.edu": 1013,
+  "c27alexander.davidson@afacademy.af.edu": 1014,
+  "c27alfred.jones@afacademy.af.edu": 1015,
+  "c27alyssa.wagner@afacademy.af.edu": 1016,
+  "c27amber.martin@afacademy.af.edu": 1017,
+  "c28amir.anjum.pk@afacademy.af.edu": 1018,
+  "c27amy.park@afacademy.af.edu": 1019,
+  "c27anders.stanton@afacademy.af.edu": 1020,
+  "c27andrew.duff@afacademy.af.edu": 1021,
+  "c27andrew.norfolk@afacademy.af.edu": 1022,
+  "c27andrew.welchez_cartagena@afacademy.af.edu": 1023,
+  "c27angel.herrera@afacademy.af.edu": 1024,
+  "c27anissa.farias@afacademy.af.edu": 1025,
+  "c27annika.carlson@afacademy.af.edu": 1026,
+  "c27anning.mi@afacademy.af.edu": 1027,
+  "c27anthony.carrillo@afacademy.af.edu": 1028,
+  "c28anthony.miller@afacademy.af.edu": 1029,
+  "c26anthony.sebastian@afacademy.af.edu": 1030,
+  "c26arianna.vanhouweling@afacademy.af.edu": 1031,
+  "c26arjuna.matthews@afacademy.af.edu": 1032,
+  "c27audrey.winstead@afacademy.af.edu": 1033,
+  "c27austen.levett@afacademy.af.edu": 1034,
+  "c26austin.denton@afacademy.af.edu": 1035,
+  "c27ava.carpentier@afacademy.af.edu": 1036,
+  "c27ava.grosfeld@afacademy.af.edu": 1037,
+  "c27ava.wilsey@afacademy.af.edu": 1038,
+  "c27benjamin.brooks@afacademy.af.edu": 1039,
+  "c27benjamin.bryant@afacademy.af.edu": 1040,
+  "c27benjamin.buzzelli@afacademy.af.edu": 1041,
+  "c27benjamin.davenport@afacademy.af.edu": 1042,
+  "c27bennett.robinson@afacademy.af.edu": 1043,
+  "c27blaze.degracie@afacademy.af.edu": 1044,
+  "c27brandon.boehm@afacademy.af.edu": 1045,
+  "c27brandon.geray@afacademy.af.edu": 1046,
+  "c26brayden.holler@afacademy.af.edu": 1047,
+  "c26brayden.moll@afacademy.af.edu": 1048,
+  "c26brent.winfree@afacademy.af.edu": 1049,
+  "c26brian.schaefer@afacademy.af.edu": 1050,
+  "c27broder.kawa@afacademy.af.edu": 1051,
+  "c27brooks.o'keefe@afacademy.af.edu": 1052,
+  "c27bryce.olson@afacademy.af.edu": 1053,
+  "c27cade.palmer@afacademy.af.edu": 1054,
+  "c27caleb.craddock@afacademy.af.edu": 1055,
+  "c27caleb.fish@afacademy.af.edu": 1056,
+  "c27caleb.walker@afacademy.af.edu": 1057,
+  "c27calvin.malech@afacademy.af.edu": 1058,
+  "c27cam.anstey@afacademy.af.edu": 1059,
+  "c27camden.hamilton@afacademy.af.edu": 1060,
+  "c27cameron.malone@afacademy.af.edu": 1061,
+  "c28carl.de_kok@afacademy.af.edu": 1062,
+  "c27carly.foster@afacademy.af.edu": 1063,
+  "c27caroline.brandt@afacademy.af.edu": 1064,
+  "c27caroline.leddy@afacademy.af.edu": 1065,
+  "c27caroline.miani@afacademy.af.edu": 1066,
+  "c27caroline.theis@afacademy.af.edu": 1067,
+  "c27carson.baker@afacademy.af.edu": 1068,
+  "c27carson.titus@afacademy.af.edu": 1069,
+  "c27carter.clafton@afacademy.af.edu": 1070,
+  "c27carter.sickles@afacademy.af.edu": 1071,
+  "c27catherine.louden@afacademy.af.edu": 1072,
+  "c26catherine.nguyen@afacademy.af.edu": 1073,
+  "c26cavan.cook@afacademy.af.edu": 1074,
+  "c27chandler.ferguson@afacademy.af.edu": 1075,
+  "c27charles.liermann@afacademy.af.edu": 1076,
+  "c28charles.settle@afacademy.af.edu": 1077,
+  "c27chase.borntreger@afacademy.af.edu": 1078,
+  "c27chirag.ponnada@afacademy.af.edu": 1079,
+  "c26chloe.hill@afacademy.af.edu": 1080,
+  "c27christian.demaster_smith@afacademy.af.edu": 1081,
+  "c27christian.koszka-lombardo@afacademy.af.edu": 1082,
+  "c27christien.monello@afacademy.af.edu": 1083,
+  "c26cian.reading@afacademy.af.edu": 1084,
+  "c27clara.teigland@afacademy.af.edu": 1085,
+  "c27clara.wallace@afacademy.af.edu": 1086,
+  "c27clark.roe@afacademy.af.edu": 1087,
+  "c26cody.sommer@afacademy.af.edu": 1088,
+  "c28colby.ting@afacademy.af.edu": 1089,
+  "c27colby.wallace@afacademy.af.edu": 1090,
+  "c27cole.murray@afacademy.af.edu": 1091,
+  "c26colton.cornell@afacademy.af.edu": 1092,
+  "c27colton.vetter-ryan@afacademy.af.edu": 1093,
+  "c27cooper.uebelhor@afacademy.af.edu": 1094,
+  "c26creed.finifrock@afacademy.af.edu": 1095,
+  "c27dallas.daley@afacademy.af.edu": 1096,
+  "c27danial.syed@afacademy.af.edu": 1097,
+  "c27danica.bishop@afacademy.af.edu": 1098,
+  "c27daniel.wang@afacademy.af.edu": 1099,
+  "c27danielle.tilp@afacademy.af.edu": 1100,
+  "c27david.anand@afacademy.af.edu": 1101,
+  "c27david.gonzales@afacademy.af.edu": 1102,
+  "c27david.mills@afacademy.af.edu": 1103,
+  "c28david.park@afacademy.af.edu": 1104,
+  "c27denver.tran@afacademy.af.edu": 1105,
+  "c27devon.straw@afacademy.af.edu": 1106,
+  "c27diego.castellanos@afacademy.af.edu": 1107,
+  "c27dominik.wasik@afacademy.af.edu": 1108,
+  "c27dominykas.remeikis@afacademy.af.edu": 1109,
+  "c26dylan.meiners@afacademy.af.edu": 1110,
+  "c26dylan.taningco@afacademy.af.edu": 1111,
+  "c27el-sheikha_leyla.geha@afacademy.af.edu": 1112,
+  "c26elayna.caron@afacademy.af.edu": 1113,
+  "c27elijah.weaver@afacademy.af.edu": 1114,
+  "c27elizabeth.germain@afacademy.af.edu": 1115,
+  "c28ellis.pomales@afacademy.af.edu": 1116,
+  "c27emily.miller@afacademy.af.edu": 1117,
+  "c27emma.bright@afacademy.af.edu": 1118,
+  "c27emma.elferdink@afacademy.af.edu": 1119,
+  "c26emma.sanchez@afacademy.af.edu": 1120,
+  "c28emory.carroll@afacademy.af.edu": 1121,
+  "c26eric.olsen@afacademy.af.edu": 1122,
+  "c26eric.randall@afacademy.af.edu": 1123,
+  "c27erika.safranek@afacademy.af.edu": 1124,
+  "c27ethan.kennedy@afacademy.af.edu": 1125,
+  "c27ethan.smith.1@afacademy.af.edu": 1126,
+  "c27ethan.smith@afacademy.af.edu": 1127,
+  "c27evan.buss@afacademy.af.edu": 1128,
+  "c27evan.gledhill@afacademy.af.edu": 1129,
+  "c27evan.nadzam@afacademy.af.edu": 1130,
+  "c26evelyn.crowe@afacademy.af.edu": 1131,
+  "c26fisher.pruitt@afacademy.af.edu": 1132,
+  "c26fletcher.foote@afacademy.af.edu": 1133,
+  "c26gabrielle.brown@afacademy.af.edu": 1134,
+  "c27gage.duetsch@afacademy.af.edu": 1135,
+  "c27garrett.piel@afacademy.af.edu": 1136,
+  "c26gianna.martyna@afacademy.af.edu": 1137,
+  "c27grace.venverloh@afacademy.af.edu": 1138,
+  "c26grant.walker@afacademy.af.edu": 1139,
+  "c27grant.wayne@afacademy.af.edu": 1140,
+  "c27grant.yost@afacademy.af.edu": 1141,
+  "c27graycen.lankford@afacademy.af.edu": 1142,
+  "c26gunnar.kvistad@afacademy.af.edu": 1143,
+  "c27hailee.makin@afacademy.af.edu": 1144,
+  "c26haley.biskup@afacademy.af.edu": 1145,
+  "c26hannah.dykens@afacademy.af.edu": 1146,
+  "c27hannah.ross@afacademy.af.edu": 1147,
+  "c27harrison.brantingham@afacademy.af.edu": 1148,
+  "c27hayden.dodge@afacademy.af.edu": 1149,
+  "c27hayden.truax@afacademy.af.edu": 1150,
+  "c27henry.brown@afacademy.af.edu": 1151,
+  "c27henry.landrum@afacademy.af.edu": 1152,
+  "c27henry.rasmussen@afacademy.af.edu": 1153,
+  "c27henry.spencer@afacademy.af.edu": 1154,
+  "c27hershel.haas@afacademy.af.edu": 1155,
+  "c27hietam.belhachmi@afacademy.af.edu": 1156,
+  "c27houston.hawkins@afacademy.af.edu": 1157,
+  "c26hunter.collins@afacademy.af.edu": 1158,
+  "c27isaac.anderson@afacademy.af.edu": 1159,
+  "c27isaac.hubert@afacademy.af.edu": 1160,
+  "c27isabella.martin@afacademy.af.edu": 1161,
+  "c27isabelle.von_osterheldt@afacademy.af.edu": 1162,
+  "c26izaiah.clinkscales@afacademy.af.edu": 1163,
+  "c27jack.phelps@afacademy.af.edu": 1164,
+  "c27jack.richards@afacademy.af.edu": 1165,
+  "c27jack.wiebe@afacademy.af.edu": 1166,
+  "c27jackson.dewald@afacademy.af.edu": 1167,
+  "c27jacob.kucera@afacademy.af.edu": 1168,
+  "c26jacob.lucero@afacademy.af.edu": 1169,
+  "c27jaden.giaccone@afacademy.af.edu": 1170,
+  "c27jaelyn.sale@afacademy.af.edu": 1171,
+  "c27jaidah.davis@afacademy.af.edu": 1172,
+  "c26jaimey-leigh.weidner@afacademy.af.edu": 1173,
+  "c27jake.delany@afacademy.af.edu": 1174,
+  "c27jake.park@afacademy.af.edu": 1175,
+  "c27jake.sendaydiego@afacademy.af.edu": 1176,
+  "c28jake.wood@afacademy.af.edu": 1177,
+  "c27james.marshall@afacademy.af.edu": 1178,
+  "c27james.stephens@afacademy.af.edu": 1179,
+  "c26james.winterfield@afacademy.af.edu": 1180,
+  "c26janie.ottenbreit@afacademy.af.edu": 1181,
+  "c27jared.wiley@afacademy.af.edu": 1182,
+  "c27jaris.mcintosh@afacademy.af.edu": 1183,
+  "c27jason.poon@afacademy.af.edu": 1184,
+  "c27javier.bermudez@afacademy.af.edu": 1185,
+  "c28jaydan.douglas@afacademy.af.edu": 1186,
+  "c27jaylen.palmer@afacademy.af.edu": 1187,
+  "c28jaylin.reese@afacademy.af.edu": 1188,
+  "c27jenason.spady@afacademy.af.edu": 1189,
+  "c27jesse.wolf@afacademy.af.edu": 1190,
+  "c27jessica.smith@afacademy.af.edu": 1191,
+  "c27john.borchelt@afacademy.af.edu": 1192,
+  "c26john.cunningham@afacademy.af.edu": 1193,
+  "c27john.freeman@afacademy.af.edu": 1194,
+  "c26john.johnson@afacademy.af.edu": 1195,
+  "c26john.king@afacademy.af.edu": 1196,
+  "c27jon.musliu@afacademy.af.edu": 1197,
+  "c27jonah.vanderveen@afacademy.af.edu": 1198,
+  "c26jordan.suan@afacademy.af.edu": 1199,
+  "c27joseph.bevivino@afacademy.af.edu": 1200,
+  "c27joseph.murphy@afacademy.af.edu": 1201,
+  "c27joseph.nichol@afacademy.af.edu": 1202,
+  "c27joshua.gatete@afacademy.af.edu": 1203,
+  "c27joshua.johnson@afacademy.af.edu": 1204,
+  "c26joshua.kim@afacademy.af.edu": 1205,
+  "c28joshua.robbins@afacademy.af.edu": 1206,
+  "c27joshua.sandifer@afacademy.af.edu": 1207,
+  "c27jossell.bakheet@afacademy.af.edu": 1208,
+  "juan.jurado@afacademy.af.edu": 1209,
+  "c28jude.sterling@afacademy.af.edu": 1210,
+  "c27julia.bennett@afacademy.af.edu": 1211,
+  "c27julia.tierney@afacademy.af.edu": 1212,
+  "c26julian.king@afacademy.af.edu": 1213,
+  "c26julianna.romano@afacademy.af.edu": 1214,
+  "c26justin.byrd@afacademy.af.edu": 1215,
+  "c26kaarin.holter@afacademy.af.edu": 1216,
+  "c27kai.guillot@afacademy.af.edu": 1217,
+  "c26kai.hurst@afacademy.af.edu": 1218,
+  "c27kai.langlais@afacademy.af.edu": 1219,
+  "c26kaitlyn.keinast@afacademy.af.edu": 1220,
+  "c27kaitlyn.surratt@afacademy.af.edu": 1221,
+  "c26karl.westermeyer@afacademy.af.edu": 1222,
+  "c27karli.neff@afacademy.af.edu": 1223,
+  "c27karson.knox@afacademy.af.edu": 1224,
+  "c27kate.fleming@afacademy.af.edu": 1225,
+  "c27katelyn.winkleblech@afacademy.af.edu": 1226,
+  "c27katherine.frost@afacademy.af.edu": 1227,
+  "c27katherine.longuil@afacademy.af.edu": 1228,
+  "c27katherine.muff@afacademy.af.edu": 1229,
+  "c27kathleen.hoang@afacademy.af.edu": 1230,
+  "c27katiemarie.anderson@afacademy.af.edu": 1231,
+  "c27kayla.beach@afacademy.af.edu": 1232,
+  "c27keanu.gotay@afacademy.af.edu": 1233,
+  "c27keaton.rodems@afacademy.af.edu": 1234,
+  "c27keegan.bennett@afacademy.af.edu": 1235,
+  "c27kendra.ballard@afacademy.af.edu": 1236,
+  "c27kenichiro.leong@afacademy.af.edu": 1237,
+  "c27kenneth.reel@afacademy.af.edu": 1238,
+  "c27kevin.krumbine@afacademy.af.edu": 1239,
+  "c26kobe.achu@afacademy.af.edu": 1240,
+  "c28kohen.manthey@afacademy.af.edu": 1241,
+  "c27kolby.gilles@afacademy.af.edu": 1242,
+  "c27korbin.moyer@afacademy.af.edu": 1243,
+  "c27koy.torres@afacademy.af.edu": 1244,
+  "c28kyle.gabelsberg@afacademy.af.edu": 1245,
+  "c27kyle.kermes@afacademy.af.edu": 1246,
+  "c27lakshan.herathmudiyanselage@afacademy.af.edu": 1247,
+  "c27larry.edgecombe@afacademy.af.edu": 1248,
+  "c27lauren.steinlage@afacademy.af.edu": 1249,
+  "c27lea.broadbent@afacademy.af.edu": 1250,
+  "c27leah.meghrian@afacademy.af.edu": 1251,
+  "c27liam.cochran@afacademy.af.edu": 1252,
+  "c26liam.pryor@afacademy.af.edu": 1253,
+  "c27lily.haeberle@afacademy.af.edu": 1254,
+  "c27lily.johnson@afacademy.af.edu": 1255,
+  "c28lily.morgan@afacademy.af.edu": 1256,
+  "c27logan.mix@afacademy.af.edu": 1257,
+  "c27logan.panzik@afacademy.af.edu": 1258,
+  "c27lorenzo.crisol@afacademy.af.edu": 1259,
+  "c26louis.body@afacademy.af.edu": 1260,
+  "c27luca.kowalik@afacademy.af.edu": 1261,
+  "c26lucas.morales@afacademy.af.edu": 1262,
+  "c27lucas.salazar@afacademy.af.edu": 1263,
+  "c27luke.mccoy@afacademy.af.edu": 1264,
+  "c26luke.vaughn@afacademy.af.edu": 1265,
+  "c27lukia.rawls@afacademy.af.edu": 1266,
+  "c27luma.vaai@afacademy.af.edu": 1267,
+  "c27mack.nuval@afacademy.af.edu": 1268,
+  "c27madeline.wilson@afacademy.af.edu": 1269,
+  "c27madilynn.converse@afacademy.af.edu": 1270,
+  "c27madison.bradley@afacademy.af.edu": 1271,
+  "c27madison.sotomayor@afacademy.af.edu": 1272,
+  "c27maggie.slife@afacademy.af.edu": 1273,
+  "c27maksym.chelko@afacademy.af.edu": 1274,
+  "c27malachi.feil@afacademy.af.edu": 1275,
+  "c26mameass.diop.sn@afacademy.af.edu": 1276,
+  "c26mandy.fleetwood@afacademy.af.edu": 1277,
+  "c26marcus.mccarty@afacademy.af.edu": 1278,
+  "c27marcus.nortey@afacademy.af.edu": 1279,
+  "c27marie.stolle@afacademy.af.edu": 1280,
+  "c27marisela.molina@afacademy.af.edu": 1281,
+  "c27marissa.hargrave@afacademy.af.edu": 1282,
+  "mark.wireman@afacademy.af.edu": 1283,
+  "c27mateo.prusky@afacademy.af.edu": 1284,
+  "c27matlynne.hardy-lyles@afacademy.af.edu": 1285,
+  "c26matthew.adsit@afacademy.af.edu": 1286,
+  "c26matthew.seale@afacademy.af.edu": 1287,
+  "c27matthew.tilton@afacademy.af.edu": 1288,
+  "c27maxwell.rischar@afacademy.af.edu": 1289,
+  "c26mckenna.vess@afacademy.af.edu": 1290,
+  "c27mckinley.baker@afacademy.af.edu": 1291,
+  "c27mia.gonzalez@afacademy.af.edu": 1292,
+  "c27michael.bunyan@afacademy.af.edu": 1293,
+  "c27michael.johnson@afacademy.af.edu": 1294,
+  "c27michael.scappaticci@afacademy.af.edu": 1295,
+  "c27michael.schroeder@afacademy.af.edu": 1296,
+  "c28michael.ulery@afacademy.af.edu": 1297,
+  "c26mikayla.mcbride@afacademy.af.edu": 1298,
+  "c27mikko_angelo.villas@afacademy.af.edu": 1299,
+  "c26milahnie.perry@afacademy.af.edu": 1300,
+  "c27mitchell.adkins@afacademy.af.edu": 1301,
+  "c27morgen.hoffmann@afacademy.af.edu": 1302,
+  "c27naomi.brabham@afacademy.af.edu": 1303,
+  "c27naomi.furman@afacademy.af.edu": 1304,
+  "c26natalia.wright@afacademy.af.edu": 1305,
+  "c26natalie.hays@afacademy.af.edu": 1306,
+  "c26nathalia.veal@afacademy.af.edu": 1307,
+  "c27nathan.elwood@afacademy.af.edu": 1308,
+  "c27naudia.paredes@afacademy.af.edu": 1309,
+  "c28neil.kumar@afacademy.af.edu": 1310,
+  "c26nell.white@afacademy.af.edu": 1311,
+  "c27nevin.miller@afacademy.af.edu": 1312,
+  "c27nicholas.barry@afacademy.af.edu": 1313,
+  "c28nicholas.camperos@afacademy.af.edu": 1314,
+  "c27nicholas.clervi@afacademy.af.edu": 1315,
+  "c27nicholas.remissong@afacademy.af.edu": 1316,
+  "c27nicholas.walter@afacademy.af.edu": 1317,
+  "c27nicolas.atayde@afacademy.af.edu": 1318,
+  "c27noah.corpus@afacademy.af.edu": 1319,
+  "c27noah.kirby@afacademy.af.edu": 1320,
+  "c28nolan.byers@afacademy.af.edu": 1321,
+  "c28obaloluwa.akinyemi@afacademy.af.edu": 1322,
+  "c26odalys.martinezelizondo@afacademy.af.edu": 1323,
+  "c27olivia.fess@afacademy.af.edu": 1324,
+  "c27otto.troxler@afacademy.af.edu": 1325,
+  "c27owen.chambers@afacademy.af.edu": 1326,
+  "c27owen.davies@afacademy.af.edu": 1327,
+  "c27owen.dubois@afacademy.af.edu": 1328,
+  "c27owen.heiser@afacademy.af.edu": 1329,
+  "c27owen.imasaki@afacademy.af.edu": 1330,
+  "c28pablo.ramirez@afacademy.af.edu": 1331,
+  "c26parker.brown@afacademy.af.edu": 1332,
+  "c26parker.menefee@afacademy.af.edu": 1333,
+  "c27patrick.lawson@afacademy.af.edu": 1334,
+  "c27patrick.wright@afacademy.af.edu": 1335,
+  "c27paul.baldwin@afacademy.af.edu": 1336,
+  "c27paul.king@afacademy.af.edu": 1337,
+  "phyllis.tully@afacademy.af.edu": 1338,
+  "c26porter.mobley@afacademy.af.edu": 1339,
+  "c27preston.phillips@afacademy.af.edu": 1340,
+  "c27pruitt.bain@afacademy.af.edu": 1341,
+  "c27ray.soldini@afacademy.af.edu": 1342,
+  "c26raymond.oliphant@afacademy.af.edu": 1343,
+  "c27raymond.ranbhise@afacademy.af.edu": 1344,
+  "c27reagan.wilson@afacademy.af.edu": 1345,
+  "c27rhett.burruss@afacademy.af.edu": 1346,
+  "c27riley.glenn@afacademy.af.edu": 1347,
+  "c27robert.johnson@afacademy.af.edu": 1348,
+  "c27robert.perez@afacademy.af.edu": 1349,
+  "c27roman.thomas@afacademy.af.edu": 1350,
+  "c28rome.bowman@afacademy.af.edu": 1351,
+  "c27ronan.o'donnell@afacademy.af.edu": 1352,
+  "c27rory.powers@afacademy.af.edu": 1353,
+  "c26rosabellouise.mahimer@afacademy.af.edu": 1354,
+  "c27rosine.titus@afacademy.af.edu": 1355,
+  "c27ryan.hajek@afacademy.af.edu": 1356,
+  "c25rys.halverson@afacademy.af.edu": 1357,
+  "c27sam.palmisano@afacademy.af.edu": 1358,
+  "c27samantha.bigger@afacademy.af.edu": 1359,
+  "c27samantha.urbine@afacademy.af.edu": 1360,
+  "c26samuel.bodily@afacademy.af.edu": 1361,
+  "c27samuel.ingram@afacademy.af.edu": 1362,
+  "c27samuel.jacobs@afacademy.af.edu": 1363,
+  "c27sarah.marceau@afacademy.af.edu": 1364,
+  "c26sarah.price@afacademy.af.edu": 1365,
+  "c27scarlet.fetterolf@afacademy.af.edu": 1366,
+  "c27sean.baker-billings@afacademy.af.edu": 1367,
+  "c27sebastian.arenas@afacademy.af.edu": 1368,
+  "c26sevastian.rodriguez@afacademy.af.edu": 1369,
+  "c27shawn.braxton@afacademy.af.edu": 1370,
+  "c26sidney.evering@afacademy.af.edu": 1371,
+  "c26siena.summers@afacademy.af.edu": 1372,
+  "c27sneha.laxminarayan@afacademy.af.edu": 1373,
+  "c27sofia.sanchez@afacademy.af.edu": 1374,
+  "c27spencer.martin@afacademy.af.edu": 1375,
+  "c26spencer.norris@afacademy.af.edu": 1376,
+  "c27stanley.plecha@afacademy.af.edu": 1377,
+  "c27stephanie.hwodeky@afacademy.af.edu": 1378,
+  "c27stephen.economou@afacademy.af.edu": 1379,
+  "c27summer.haworth@afacademy.af.edu": 1380,
+  "c27suneet.shivraj@afacademy.af.edu": 1381,
+  "c27taylor.dolson@afacademy.af.edu": 1382,
+  "c26terese.schmidt@afacademy.af.edu": 1383,
+  "c26theodore.garrish@afacademy.af.edu": 1384,
+  "c26thomas.tong@afacademy.af.edu": 1385,
+  "c27thomas.whitman@afacademy.af.edu": 1386,
+  "c28tobias.ottenbacher@afacademy.af.edu": 1387,
+  "c27tristan.schemmerling@afacademy.af.edu": 1388,
+  "c27troy.miller@afacademy.af.edu": 1389,
+  "c27tucker.rice@afacademy.af.edu": 1390,
+  "c27tyler.keegan@afacademy.af.edu": 1391,
+  "c26tyler.suess@afacademy.af.edu": 1392,
+  "c27tyler.surratt@afacademy.af.edu": 1393,
+  "c26victoria.leppert@afacademy.af.edu": 1394,
+  "c27vincent.valeros@afacademy.af.edu": 1395,
+  "c28walker.smith@afacademy.af.edu": 1396,
+  "c27warren.gorman@afacademy.af.edu": 1397,
+  "c27wells.flinn@afacademy.af.edu": 1398,
+  "c27wesley.celichowski@afacademy.af.edu": 1399,
+  "c26weston.jenkins@afacademy.af.edu": 1400,
+  "c27william.gryzen@afacademy.af.edu": 1401,
+  "c27william.collins@afacademy.af.edu": 1402,
+  "c26william.hunt@afacademy.af.edu": 1403,
+  "c26william.matkin@afacademy.af.edu": 1404,
+  "c27william.staring@afacademy.af.edu": 1405,
+  "c27william.taylor@afacademy.af.edu": 1406,
+  "c27william.torres@afacademy.af.edu": 1407,
+  "c27xavier.dickens@afacademy.af.edu": 1408,
+  "c26yacine.boubacaride.ne@afacademy.af.edu": 1409,
+  "c27zacharia.taha@afacademy.af.edu": 1410,
+  "c27zachary.crane@afacademy.af.edu": 1411,
+  "c27zachary_harrison.quinto@afacademy.af.edu": 1412,
+  "c27zachary.jowers@afacademy.af.edu": 1413,
+  "c27zachary.king@afacademy.af.edu": 1414,
+  "c27zachary.krar@afacademy.af.edu": 1415,
+  "zacharyrobinson@u.boisestate.edu": 1416,
+  "c26zachery.cigelske@afacademy.af.edu": 1417,
+  "c28zoe.dewitt@afacademy.af.edu": 1418
+};
+
+    // Build table with inputs (T pre-filled)
+    const tbody = document.getElementById("table-body");
+    answerKey.forEach((row, i) => {
+      const tr = document.createElement("tr");
+      ["A","B","C","T","Out"].forEach(col => {
+        const td = document.createElement("td");
+        if(col === "T") {
+          td.textContent = row[col];
+        } else {
+          const inp = document.createElement("input");
+          inp.setAttribute("maxlength","1");
+          inp.dataset.col = col;
+          inp.dataset.row = i;
+          td.appendChild(inp);
+        }
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+
+    // Check function with counts and feedback
+    function checkTable(){
+      let inputCorrectCount = 0;
+      let outputCorrectCount = 0;
+
+      for(let i=0;i<answerKey.length;i++){
+        let inputsRowCorrect = true;
+        const cols = ["A","B","C"];
+        cols.forEach(col => {
+          const el = document.querySelector(`input[data-row='${i}'][data-col='${col}']`);
+          const val = el.value.trim();
+          if(val !== String(answerKey[i][col])){
+            inputsRowCorrect = false;
+          }
+        });
+        if(inputsRowCorrect) inputCorrectCount++;
+
+        const outEl = document.querySelector(`input[data-row='${i}'][data-col='Out']`);
+        const outVal = outEl.value.trim();
+        if(outVal === String(answerKey[i]["Out"])) outputCorrectCount++;
+      }
+
+      const result = document.getElementById("result");
+      // Compose feedback
+      let feedback = `Inputs correct: ${inputCorrectCount}/8\nOutputs correct: ${outputCorrectCount}/8\n`;
+
+      if(inputCorrectCount === 8 && outputCorrectCount === 8){
+        // Prompt for email (all lowercase, no spaces)
+        const emailPrompt = prompt("✅ Table correct! Enter your cadet email address (all lowercase, no spaces):");
+        if(emailPrompt){
+          const lookup = emailPrompt.toLowerCase().trim();
+          if(lookup in emailCodeMap){
+            feedback += `\n✅ Entire table correct!\nBlackboard Code: ${emailCodeMap[lookup]}`;
+            result.style.color = "green";
+          } else {
+            feedback += "\n✅ Table correct, but email not found in roster. try inputing your email again.";
+            result.style.color = "orange";
+          }
+        } else {
+          feedback += "\n✅ Table correct! (Email prompt canceled.)";
+          result.style.color = "green";
+        }
+      } else {
+        if(inputCorrectCount < 8){
+          feedback += "\n❌ Inputs incorrect. Refer to how the truth table inputs are shown in lessons 14 and 15.";
+        }
+        if(outputCorrectCount < 8){
+          feedback += "\n❌ Outputs incorrect.";
+        }
+        result.style.color = "red";
+      }
+
+      result.textContent = feedback;
+    }
+  </script>
+</body>
+</html>
